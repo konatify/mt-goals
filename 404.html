@@ -20,8 +20,7 @@
 
     header {
       text-align: center;
-      padding-top: 60px;
-      margin-bottom: 0;
+      margin-bottom: 48px;
     }
 
     header h1 {
@@ -36,6 +35,26 @@
       color: rgba(255,255,255,0.5);
       font-size: 0.78rem;
       font-weight: 300;
+    }
+
+    header a.mt-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.78rem;
+      font-weight: 300;
+      text-decoration: none;
+      transition: color 0.2s;
+      margin-top: 6px;
+    }
+    header a.mt-link:hover {
+      color: rgba(255,255,255,0.8);
+    }
+    header a.mt-link svg {
+      width: 11px;
+      height: 11px;
+      flex-shrink: 0;
     }
 
     .middle {
