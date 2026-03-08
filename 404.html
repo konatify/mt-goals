@@ -285,6 +285,30 @@
       font-size: 0.78rem;
       user-select: none;
     }
+
+    .theme-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.5);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 300;
+      padding: 6px 8px;
+      border-radius: 4px;
+      transition: color 0.2s;
+    }
+    .theme-toggle-btn:hover {
+      color: rgba(255,255,255,1);
+    }
+    .theme-toggle-btn svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -331,7 +355,63 @@
   </a>
 </div>
 
+<div class="footer-right">
+  <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle theme">
+    <svg fill="#ffffff" viewBox="0 0 50 50" version="1.2" baseProfile="tiny" xmlns="http://www.w3.org/2000/svg" overflow="inherit">
+      <path d="M21.211 6c-12.632 0-20.211 10.133-20.211 15.2s2.526 8.867 7.579 8.867 7.58 1.266 7.58 5.066c0 5.066 3.789 8.866 8.842 8.866 16.422 0 24-8.866 24-17.732-.001-15.2-12.635-20.267-27.79-20.267zm-3.158 5.067c1.744 0 3.158 1.418 3.158 3.166 0 1.75-1.414 3.167-3.158 3.167s-3.158-1.418-3.158-3.167c0-1.748 1.414-3.166 3.158-3.166zm10.104 0c1.744 0 3.158 1.418 3.158 3.166 0 1.75-1.414 3.167-3.158 3.167-1.743 0-3.157-1.418-3.157-3.167 0-1.748 1.414-3.166 3.157-3.166zm10.106 5.066c1.745 0 3.159 1.417 3.159 3.167 0 1.75-1.414 3.166-3.159 3.166-1.744 0-3.157-1.417-3.157-3.166-.001-1.749 1.413-3.167 3.157-3.167zm-29.052 2.534c1.744 0 3.157 1.417 3.157 3.165 0 1.75-1.414 3.167-3.157 3.167s-3.158-1.418-3.158-3.167c0-1.748 1.414-3.165 3.158-3.165zm15.789 12.666c2.093 0 3.789 1.7 3.789 3.801 0 2.098-1.696 3.799-3.789 3.799s-3.789-1.701-3.789-3.799c0-2.101 1.696-3.801 3.789-3.801z"/>
+    </svg>
+    <span id="themeLabel">Default</span>
+  </button>
+</div>
+
 <script src="/mt-stats-widget.js"></script>
+
+<script>
+const STORAGE_KEY = 'monkeytype_goals';
+const THEME_KEY   = 'monkeytype_goals_theme';
+const container   = document.getElementById('goalsContainer');
+const addBtn      = document.getElementById('addBtn');
+const MAX         = 180;
+
+const themeBtn        = document.getElementById('themeToggleBtn');
+const themeLabel      = document.getElementById('themeLabel');
+const themeStylesheet = document.getElementById('theme-stylesheet');
+const defaultStyle    = document.getElementById('default-style');
+const headerLogo      = document.getElementById('header-logo');
+
+let isDiscord = localStorage.getItem(THEME_KEY) === 'discord';
+
+function applyTheme(discord) {
+  let favicon = document.querySelector("link[rel~='icon']");
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    document.head.appendChild(favicon);
+  }
+
+  if (discord) {
+    themeStylesheet.href = '/themes/discord.css';
+    defaultStyle.disabled = true;
+    themeLabel.textContent = 'Discord';
+    headerLogo.src = '/images/mtgoals_discord.png';
+    favicon.href = '/images/mtg_discord.png';
+  } else {
+    themeStylesheet.href = '';
+    defaultStyle.disabled = false;
+    themeLabel.textContent = 'Default';
+    headerLogo.src = '/images/mtgoals.png';
+    favicon.href = '/images/mtg.png';
+  }
+}
+
+applyTheme(isDiscord);
+
+themeBtn.addEventListener('click', () => {
+  isDiscord = !isDiscord;
+  localStorage.setItem(THEME_KEY, isDiscord ? 'discord' : 'default');
+  applyTheme(isDiscord);
+});
+</script>
 
 </body>
 </html>
