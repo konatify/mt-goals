@@ -1,0 +1,279 @@
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #313338;
+      font-family: 'Roboto Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px 40px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    header .logo {
+      height: 70px;
+      width: auto;
+      margin-bottom: 10px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    header p {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.78rem;
+      font-weight: 300;
+    }
+
+    header a.mt-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.78rem;
+      font-weight: 300;
+      text-decoration: none;
+      transition: color 0.2s;
+      margin-top: 6px;
+    }
+    header a.mt-link:hover {
+      color: rgba(255,255,255,0.8);
+    }
+    header a.mt-link svg {
+      width: 11px;
+      height: 11px;
+      flex-shrink: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .add-btn {
+      background-color: #2b2d31;
+      border: none;
+      border-radius: 8px;
+      color: rgba(255,255,255,0.45);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.88rem;
+      padding: 14px 20px;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      width: 100%;
+    }
+    .add-btn:hover {
+      background-color: #35373d;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .goal-input-row {
+      display: flex;
+      align-items: center;
+      background-color: #2b2d31;
+      border-radius: 8px;
+      padding: 10px 14px;
+      gap: 12px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .goal-input-row textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.88rem;
+      resize: none;
+      height: 42px;
+      line-height: 1.5;
+      padding-top: 4px;
+    }
+    .goal-input-row textarea::placeholder {
+      color: rgba(255,255,255,0.3);
+    }
+
+    .input-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .char-counter {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .pin-btn, .cancel-btn {
+      background: none;
+      border: none;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.82rem;
+      cursor: pointer;
+      white-space: nowrap;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+
+    .pin-btn {
+      color: #5974ea;
+    }
+    .pin-btn:hover { background: rgba(226,183,20,0.12); }
+
+    .cancel-btn {
+      color: rgba(255,255,255,0.45);
+    }
+    .cancel-btn:hover { background: rgba(255,255,255,0.07); }
+
+    .goal-card {
+      display: flex;
+      align-items: flex-start;
+      background-color: #2b2d31;
+      border-radius: 8px;
+      padding: 14px 16px;
+      gap: 14px;
+      animation: fadeIn 0.2s ease;
+      position: relative;
+      transition: box-shadow 0.15s, background 0.15s;
+      user-select: none;
+    }
+
+    .goal-card.dragging {
+      opacity: 0.45;
+      box-shadow: none;
+    }
+
+    .goal-card.drag-over {
+      box-shadow: 0 0 0 2px #5974ea;
+    }
+
+    .goal-card .goal-text {
+      flex: 1;
+      color: #fff;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .goal-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      flex-shrink: 0;
+      opacity: 0.55;
+      transition: opacity 0.15s;
+      display: flex;
+      align-items: center;
+    }
+    .delete-btn:hover { opacity: 1; }
+    .delete-btn svg { width: 18px; height: 18px; display: block; }
+
+    .drag-handle {
+      background: none;
+      border: none;
+      cursor: grab;
+      padding: 2px 4px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      opacity: 0.35;
+      transition: opacity 0.15s;
+      touch-action: none;
+      height: 100%;
+      align-self: center;
+    }
+    .drag-handle:hover { opacity: 0.9; }
+    .drag-handle:active { cursor: grabbing; }
+    .drag-handle span {
+      display: block;
+      width: 3.5px;
+      height: 3.5px;
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    .drop-indicator {
+      height: 2px;
+      background: #5974ea;
+      border-radius: 2px;
+      margin: -6px 0;
+      animation: fadeIn 0.1s ease;
+    }
+
+    .fading {
+      animation: fadeOut 0.35s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; transform: scale(1); }
+      to   { opacity: 0; transform: scale(0.97); }
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 28px;
+      left: 28px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .footer-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.5);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 300;
+      text-decoration: none;
+      padding: 6px 8px;
+      border-radius: 4px;
+      transition: color 0.2s;
+    }
+    .footer-link:hover {
+      color: rgba(255,255,255,1);
+    }
+    .footer-link svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      opacity: inherit;
+    }
+
+    .footer-divider {
+      color: rgba(255,255,255,0.2);
+      font-size: 0.78rem;
+      user-select: none;
+    }
