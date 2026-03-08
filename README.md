@@ -1,4 +1,4 @@
-![MonkeyType Goals](https://mtgoals.zandovo.com/images/game.png)
+![MonkeyType Goals](https://mtgoals.zandovo.com/images/readme_picture.png)
 <br />
 
 [![HTML5](https://img.shields.io/badge/html5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
@@ -7,7 +7,7 @@
 ![Vercel](https://img.shields.io/badge/vercel-%23000000.svg?style=for-the-badge&logo=vercel&logoColor=white)
 
 # About
-Set goals for you to achieve in the game created by Miodec, [MonkeyType](https://monkeytype.com). Anything!
+Set goals for you to achieve in the typing test website created by Miodec, [MonkeyType](https://monkeytype.com). Anything!
 
 # Data Management
 We collect 0 data. We don't know your IP, Country, house location, etc...
