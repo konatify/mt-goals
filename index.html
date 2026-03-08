@@ -160,13 +160,17 @@
       gap: 14px;
       animation: fadeIn 0.2s ease;
       position: relative;
-      transition: box-shadow 0.15s, background 0.15s, opacity 0.15s;
+      transition: box-shadow 0.15s, background 0.15s;
       user-select: none;
     }
 
-    .goal-card.is-dragging-source {
-      opacity: 0;
-      pointer-events: none;
+    .goal-card.dragging {
+      opacity: 0.45;
+      box-shadow: none;
+    }
+
+    .goal-card.drag-over {
+      box-shadow: 0 0 0 2px #e2b714;
     }
 
     .goal-card .goal-text {
@@ -212,6 +216,7 @@
       opacity: 0.35;
       transition: opacity 0.15s;
       touch-action: none;
+      height: 100%;
       align-self: center;
     }
     .drag-handle:hover { opacity: 0.9; }
@@ -224,33 +229,12 @@
       background: #fff;
     }
 
-    .drag-ghost {
-      position: fixed;
-      pointer-events: none;
-      z-index: 9999;
-      border-radius: 8px;
-      background-color: #2b2d31;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 2px #e2b714;
-      opacity: 0.96;
-      transform: rotate(1.5deg) scale(1.03);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
-    }
-
     .drop-indicator {
-      height: 3px;
+      height: 2px;
       background: #e2b714;
-      border-radius: 3px;
-      margin: -7px 0;
-      pointer-events: none;
-      box-shadow: 0 0 8px rgba(226,183,20,0.6);
-    }
-
-    .drag-placeholder {
-      border-radius: 8px;
-      background: rgba(226,183,20,0.07);
-      border: 2px dashed rgba(226,183,20,0.3);
-      pointer-events: none;
-      flex-shrink: 0;
+      border-radius: 2px;
+      margin: -6px 0;
+      animation: fadeIn 0.1s ease;
     }
 
     .fading {
@@ -411,6 +395,7 @@ function applyTheme(discord) {
     favicon.rel = 'icon';
     document.head.appendChild(favicon);
   }
+
   if (discord) {
     themeStylesheet.href = '/themes/discord.css';
     defaultStyle.disabled = true;
@@ -427,6 +412,7 @@ function applyTheme(discord) {
 }
 
 applyTheme(isDiscord);
+
 themeBtn.addEventListener('click', () => {
   isDiscord = !isDiscord;
   localStorage.setItem(THEME_KEY, isDiscord ? 'discord' : 'default');
@@ -437,145 +423,125 @@ function loadGoals() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
   catch { return []; }
 }
+
 function saveGoals(goals) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
 }
-  
-let drag = null;
+
+let dragSrc = null;
+let dragId  = null;
+let indicator = null;
 
 function getCards() {
-  return [...container.querySelectorAll('.goal-card:not(.drag-placeholder)')];
-}
-
-function createGhost(card) {
-  const rect = card.getBoundingClientRect();
-  const ghost = card.cloneNode(true);
-  ghost.classList.add('drag-ghost');
-  ghost.style.width  = rect.width  + 'px';
-  ghost.style.height = rect.height + 'px';
-  document.body.appendChild(ghost);
-  return ghost;
-}
-
-function moveGhost(ghost, clientX, clientY, offsetX, offsetY) {
-  ghost.style.left = (clientX - offsetX) + 'px';
-  ghost.style.top  = (clientY - offsetY) + 'px';
+  return [...container.querySelectorAll('.goal-card')];
 }
 
 function removeIndicator() {
-  const old = container.querySelector('.drop-indicator');
-  if (old) old.remove();
+  if (indicator) { indicator.remove(); indicator = null; }
 }
 
-function getInsertTarget(clientY) {
-  const cards = getCards().filter(c => c !== drag.card);
-  if (!cards.length) return { append: true };
+function insertIndicatorBefore(el) {
+  removeIndicator();
+  indicator = document.createElement('div');
+  indicator.className = 'drop-indicator';
+  container.insertBefore(indicator, el);
+}
 
-  for (const c of cards) {
-    const rect = c.getBoundingClientRect();
-    if (clientY < rect.top + rect.height / 2) {
-      return { before: c };
+function insertIndicatorAfter(el) {
+  removeIndicator();
+  indicator = document.createElement('div');
+  indicator.className = 'drop-indicator';
+  el.after(indicator);
+}
+
+function onHandleMouseDown(e, card, id) {
+  e.preventDefault();
+  dragSrc = card;
+  dragId  = id;
+  card.classList.add('dragging');
+
+  function onMouseMove(ev) {
+    const cards = getCards().filter(c => c !== dragSrc);
+    removeIndicator();
+
+    let placed = false;
+    for (const c of cards) {
+      const rect = c.getBoundingClientRect();
+      const mid  = rect.top + rect.height / 2;
+      if (ev.clientY < mid) {
+        insertIndicatorBefore(c);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed && cards.length > 0) {
+      insertIndicatorAfter(cards[cards.length - 1]);
     }
   }
-  return { after: cards[cards.length - 1] };
-}
 
-function placeIndicator(clientY) {
-  removeIndicator();
-  const target = getInsertTarget(clientY);
-  const line = document.createElement('div');
-  line.className = 'drop-indicator';
-  if (target.before) {
-    container.insertBefore(line, target.before);
-  } else if (target.after) {
-    target.after.after(line);
-  } else {
-    container.insertBefore(line, addBtn);
-  }
-  return target;
-}
-
-function commitDrop(target) {
-  removeIndicator();
-  drag.card.classList.remove('is-dragging-source');
-
-  if (target.before) {
-    container.insertBefore(drag.card, target.before);
-  } else if (target.after) {
-    target.after.after(drag.card);
-  } else {
-    container.insertBefore(drag.card, addBtn);
-  }
-
-  const newOrder = getCards().map(c => c.dataset.id);
-  const goals    = loadGoals();
-  const map      = Object.fromEntries(goals.map(g => [g.id, g]));
-  saveGoals(newOrder.map(id => map[id]).filter(Boolean));
-}
-
-function startDrag(card, clientX, clientY) {
-  const rect   = card.getBoundingClientRect();
-  const offsetX = clientX - rect.left;
-  const offsetY = clientY - rect.top;
-  const ghost   = createGhost(card);
-
-  card.classList.add('is-dragging-source');
-
-  drag = { card, ghost, offsetX, offsetY, lastTarget: null };
-
-  moveGhost(ghost, clientX, clientY, offsetX, offsetY);
-}
-
-function onPointerMove(clientX, clientY) {
-  if (!drag) return;
-  moveGhost(drag.ghost, clientX, clientY, drag.offsetX, drag.offsetY);
-  drag.lastTarget = placeIndicator(clientY);
-}
-
-function endDrag() {
-  if (!drag) return;
-  drag.ghost.remove();
-  commitDrop(drag.lastTarget || { append: true });
-  drag = null;
-  document.body.style.userSelect = '';
-  document.body.style.cursor     = '';
-}
-
-function onHandleMouseDown(e, card) {
-  if (e.button !== 0) return;
-  e.preventDefault();
-  document.body.style.userSelect = 'none';
-  document.body.style.cursor     = 'grabbing';
-  startDrag(card, e.clientX, e.clientY);
-
-  function onMouseMove(ev) { onPointerMove(ev.clientX, ev.clientY); }
-  function onMouseUp()     {
+  function onMouseUp() {
     document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup',   onMouseUp);
-    endDrag();
+    document.removeEventListener('mouseup', onMouseUp);
+    finishDrag();
   }
+
   document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup',   onMouseUp);
+  document.addEventListener('mouseup', onMouseUp);
 }
 
-function onHandleTouchStart(e, card) {
-  const touch = e.touches[0];
-  startDrag(card, touch.clientX, touch.clientY);
+function onHandleTouchStart(e, card, id) {
+  dragSrc = card;
+  dragId  = id;
+  card.classList.add('dragging');
 
   function onTouchMove(ev) {
     ev.preventDefault();
-    const t = ev.touches[0];
-    onPointerMove(t.clientX, t.clientY);
+    const touch = ev.touches[0];
+    const cards = getCards().filter(c => c !== dragSrc);
+    removeIndicator();
+
+    let placed = false;
+    for (const c of cards) {
+      const rect = c.getBoundingClientRect();
+      const mid  = rect.top + rect.height / 2;
+      if (touch.clientY < mid) {
+        insertIndicatorBefore(c);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed && cards.length > 0) {
+      insertIndicatorAfter(cards[cards.length - 1]);
+    }
   }
+
   function onTouchEnd() {
     card.removeEventListener('touchmove', onTouchMove);
-    card.removeEventListener('touchend',  onTouchEnd);
-    card.removeEventListener('touchcancel', onTouchEnd);
-    endDrag();
+    card.removeEventListener('touchend', onTouchEnd);
+    finishDrag();
   }
-  card.addEventListener('touchmove',   onTouchMove,  { passive: false });
-  card.addEventListener('touchend',    onTouchEnd);
-  card.addEventListener('touchcancel', onTouchEnd);
+
+  card.addEventListener('touchmove', onTouchMove, { passive: false });
+  card.addEventListener('touchend', onTouchEnd);
+}
+
+function finishDrag() {
+  if (!dragSrc) return;
+  dragSrc.classList.remove('dragging');
+
+  if (indicator) {
+    container.insertBefore(dragSrc, indicator);
+    removeIndicator();
+  }
+
+  dragSrc = null;
+  dragId  = null;
+
+  const newOrder = getCards().map(c => c.dataset.id);
+  const goals = loadGoals();
+  const map = Object.fromEntries(goals.map(g => [g.id, g]));
+  const reordered = newOrder.map(id => map[id]).filter(Boolean);
+  saveGoals(reordered);
 }
 
 function renderGoal(text, id) {
@@ -603,7 +569,8 @@ function renderGoal(text, id) {
     card.classList.add('fading');
     card.addEventListener('animationend', () => {
       card.remove();
-      saveGoals(loadGoals().filter(g => g.id !== id));
+      const goals = loadGoals().filter(g => g.id !== id);
+      saveGoals(goals);
     });
   });
 
@@ -612,10 +579,11 @@ function renderGoal(text, id) {
   handle.title = 'Drag to reorder';
   handle.innerHTML = `<span></span><span></span><span></span>`;
 
-  handle.addEventListener('mousedown',  e => onHandleMouseDown(e, card));
-  handle.addEventListener('touchstart', e => onHandleTouchStart(e, card), { passive: true });
+  handle.addEventListener('mousedown', e => onHandleMouseDown(e, card, id));
+  handle.addEventListener('touchstart', e => onHandleTouchStart(e, card, id), { passive: true });
 
   actions.appendChild(delBtn);
+
   card.appendChild(handle);
   card.appendChild(textEl);
   card.appendChild(actions);
@@ -642,7 +610,7 @@ function showInputRow() {
   const actionsEl = document.createElement('div');
   actionsEl.className = 'input-actions';
 
-  const pinBtn   = document.createElement('button');
+  const pinBtn = document.createElement('button');
   pinBtn.className = 'pin-btn';
   pinBtn.textContent = 'Pin';
 
@@ -656,7 +624,11 @@ function showInputRow() {
 
   function pinGoal() {
     const text = ta.value.trim();
-    if (!text) { row.remove(); addBtn.style.display = ''; return; }
+    if (!text) {
+      row.remove();
+      addBtn.style.display = '';
+      return;
+    }
     const id = Date.now().toString();
     const goals = loadGoals();
     goals.push({ id, text });
@@ -666,13 +638,16 @@ function showInputRow() {
     renderGoal(text, id);
   }
 
-  function cancelGoal() { row.remove(); addBtn.style.display = ''; }
+  function cancelGoal() {
+    row.remove();
+    addBtn.style.display = '';
+  }
 
   pinBtn.addEventListener('click', pinGoal);
   cancelBtn.addEventListener('click', cancelGoal);
   ta.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); pinGoal(); }
-    if (e.key === 'Escape') cancelGoal();
+    if (e.key === 'Escape') { cancelGoal(); }
   });
 
   actionsEl.appendChild(pinBtn);
