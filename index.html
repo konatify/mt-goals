@@ -440,7 +440,7 @@ function loadGoals() {
 function saveGoals(goals) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
 }
-
+  
 let drag = null;
 
 function getCards() {
@@ -453,8 +453,6 @@ function createGhost(card) {
   ghost.classList.add('drag-ghost');
   ghost.style.width  = rect.width  + 'px';
   ghost.style.height = rect.height + 'px';
-  ghost.style.top    = rect.top    + 'px';
-  ghost.style.left   = rect.left   + 'px';
   document.body.appendChild(ghost);
   return ghost;
 }
