@@ -416,40 +416,36 @@ applyTheme(isDiscord);
 themeBtn.addEventListener('click', () => {
   isDiscord = !isDiscord;
   localStorage.setItem(THEME_KEY, isDiscord ? 'discord' : 'default');
-  if (isDiscord) {
-    const overlay = document.createElement('div');
-    Object.assign(overlay.style, {
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      width: '100vw',
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#313338',
-      zIndex: '999999',
-      opacity: '1',
-      transition: 'opacity 0.8s ease-out',
-    });
-    const text = document.createElement('span');
-    text.textContent = 'Loading Data...';
-    Object.assign(text.style, {
-      fontFamily: "'Roboto Mono', monospace",
-      fontSize: '1.4rem',
-      fontWeight: '500',
-      color: '#5974ea',
-    });
-    overlay.appendChild(text);
-    document.body.appendChild(overlay);
-    applyTheme(isDiscord);
-    setTimeout(() => {
-      overlay.style.opacity = '0';
-      overlay.addEventListener('transitionend', () => overlay.remove());
-    }, 500);
-  } else {
-    applyTheme(isDiscord);
-  }
+  const overlay = document.createElement('div');
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100vw',
+    height: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#313338',
+    zIndex: '999999',
+    opacity: '1',
+    transition: 'opacity 0.8s ease-out',
+  });
+  const text = document.createElement('span');
+  text.textContent = 'Loading Data...';
+  Object.assign(text.style, {
+    fontFamily: "'Roboto Mono', monospace",
+    fontSize: '1.4rem',
+    fontWeight: '500',
+    color: '#5974ea',
+  });
+  overlay.appendChild(text);
+  document.body.appendChild(overlay);
+  applyTheme(isDiscord);
+  setTimeout(() => {
+    overlay.style.opacity = '0';
+    overlay.addEventListener('transitionend', () => overlay.remove());
+  }, 500);
 });
 
 function loadGoals() {
