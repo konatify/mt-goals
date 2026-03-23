@@ -16,14 +16,13 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 60px 20px 40px;
+      padding: 60px 20px 100px;
     }
 
     header {
       text-align: center;
       margin-bottom: 48px;
     }
-
     header .logo {
       height: 70px;
       width: auto;
@@ -32,13 +31,11 @@
       margin-left: auto;
       margin-right: auto;
     }
-
     header p {
       color: rgba(255,255,255,0.5);
       font-size: 0.78rem;
       font-weight: 300;
     }
-
     header a.mt-link {
       display: inline-flex;
       align-items: center;
@@ -50,20 +47,223 @@
       transition: color 0.2s;
       margin-top: 6px;
     }
-    header a.mt-link:hover {
-      color: rgba(255,255,255,0.8);
-    }
-    header a.mt-link svg {
-      width: 11px;
-      height: 11px;
-      flex-shrink: 0;
+    header a.mt-link:hover { color: rgba(255,255,255,0.8); }
+    header a.mt-link svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
     }
 
-    .coming-soon {
-      color: rgba(255,255,255,0.45);
-      font-size: 0.92rem;
-      font-weight: 300;
-      letter-spacing: 0.02em;
+    #config-banner {
+      background: #1e1f22;
+      border: 1px solid rgba(226,183,20,0.35);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #config-banner p {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.78rem;
+      line-height: 1.7;
+    }
+    #config-banner p strong { color: #e2b714; font-weight: 500; }
+    #config-banner p a { color: #e2b714; }
+    #config-banner code {
+      display: block;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.8;
+      margin-top: 4px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .config-inputs { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .config-inputs input {
+      background: #2b2d31;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.78rem;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .config-inputs input:focus { border-color: rgba(226,183,20,0.6); }
+    .config-inputs input::placeholder { color: rgba(255,255,255,0.25); }
+    .config-save-btn {
+      background: #e2b714;
+      border: none;
+      border-radius: 6px;
+      color: #1a1a1a;
+      cursor: pointer;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 9px 18px;
+      align-self: flex-start;
+      transition: opacity 0.2s;
+    }
+    .config-save-btn:hover { opacity: 0.85; }
+
+    #compose {
+      background: #2b2d31;
+      border-radius: 8px 8px 0 0;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 2px;
+    }
+    #compose-top { display: flex; align-items: flex-start; gap: 12px; }
+    #compose-name {
+      color: #e2b714;
+      font-size: 0.78rem;
+      font-weight: 500;
+      white-space: nowrap;
+      padding-top: 5px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    #compose-name.locked { cursor: default; }
+    #compose-name:not(.locked):hover { text-decoration: underline; }
+    #compose textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.88rem;
+      resize: none;
+      min-height: 42px;
+      line-height: 1.6;
+      padding-top: 3px;
+    }
+    #compose textarea::placeholder { color: rgba(255,255,255,0.25); }
+    #compose-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+    #compose-counter { color: rgba(255,255,255,0.35); font-size: 0.72rem; }
+    #post-btn {
+      background: #e2b714;
+      border: none;
+      border-radius: 6px;
+      color: #1a1a1a;
+      cursor: pointer;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 7px 16px;
+      transition: opacity 0.2s;
+    }
+    #post-btn:hover { opacity: 0.85; }
+    #post-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #name-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.15s ease;
+    }
+    #name-modal {
+      background: #2b2d31;
+      border-radius: 10px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: slideUp 0.2s ease;
+    }
+    #name-modal h2 { color: #fff; font-size: 0.95rem; font-weight: 500; }
+    #name-modal p { color: rgba(255,255,255,0.45); font-size: 0.78rem; line-height: 1.6; }
+    #name-input {
+      background: #1e1f22;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.88rem;
+      padding: 10px 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #name-input:focus { border-color: rgba(226,183,20,0.6); }
+    #name-input::placeholder { color: rgba(255,255,255,0.2); }
+    #name-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    #name-modal-footer span { color: rgba(255,255,255,0.3); font-size: 0.72rem; }
+    #set-name-btn {
+      background: #e2b714;
+      border: none;
+      border-radius: 6px;
+      color: #1a1a1a;
+      cursor: pointer;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 8px 18px;
+      transition: opacity 0.2s;
+    }
+    #set-name-btn:hover { opacity: 0.85; }
+
+    #posts-feed { display: flex; flex-direction: column; }
+
+    .post-card {
+      background: #2b2d31;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      animation: fadeIn 0.2s ease;
+    }
+    .post-card:last-of-type {
+      border-radius: 0 0 8px 8px;
+      border-bottom: none;
+    }
+    .post-name { color: #e2b714; font-size: 0.78rem; font-weight: 500; margin-bottom: 5px; }
+    .post-content { color: #fff; font-size: 0.88rem; line-height: 1.65; word-break: break-word; white-space: pre-wrap; }
+    .post-time { color: rgba(255,255,255,0.25); font-size: 0.7rem; margin-top: 7px; }
+
+    #load-sentinel { height: 40px; flex-shrink: 0; }
+
+    .status-line {
+      text-align: center;
+      color: rgba(255,255,255,0.25);
+      font-size: 0.78rem;
+      padding: 22px 0 8px;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.12);
+      border-top-color: #e2b714;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .footer {
@@ -74,7 +274,6 @@
       align-items: center;
       gap: 4px;
     }
-
     .footer-link {
       display: inline-flex;
       align-items: center;
@@ -91,30 +290,19 @@
       border-radius: 4px;
       transition: color 0.2s;
     }
-    .footer-link:hover {
-      color: rgba(255,255,255,1);
-    }
-    .footer-link svg {
-      width: 15px;
-      height: 15px;
-      flex-shrink: 0;
-    }
-
-    .footer-divider {
-      color: rgba(255,255,255,0.2);
-      font-size: 0.78rem;
-      user-select: none;
-    }
+    .footer-link:hover { color: rgba(255,255,255,1); }
+    .footer-link svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .footer-divider { color: rgba(255,255,255,0.2); font-size: 0.78rem; user-select: none; }
   </style>
 </head>
 <body>
 
 <header>
-  <img src="https://mtgoals.cc/images/mtgoals.png" alt="Monkeytype Goals" class="logo" />
+  <img src="/images/mtgoals.png" alt="Monkeytype Goals" class="logo" />
   <p>Not promoted or endorsed by Miodec.</p>
   <a class="mt-link" href="https://monkeytype.com" target="_blank" rel="noopener noreferrer">
     monkeytype.com
-    <svg viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" fill="none">
+    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="none">
       <g fill="rgba(255,255,255,0.5)" transform="translate(85.333333, 64.000000)">
         <path d="M128,63.999444 L128,106.666444 L42.6666667,106.666667 L42.6666667,320 L256,320 L256,234.666444 L298.666,234.666444 L298.666667,362.666667 L4.26325641e-14,362.666667 L4.26325641e-14,64 L128,63.999444 Z M362.666667,1.42108547e-14 L362.666667,170.666667 L320,170.666667 L320,72.835 L143.084945,249.751611 L112.915055,219.581722 L289.83,42.666 L192,42.6666667 L192,1.42108547e-14 L362.666667,1.42108547e-14 Z"/>
       </g>
@@ -122,7 +310,55 @@
   </a>
 </header>
 
-<p class="coming-soon">Monkeytype Goals posts are coming soon.</p>
+<div class="container">
+
+  <div id="config-banner">
+    <p><strong>One-time setup.</strong> Create a free project at <a href="https://supabase.com" target="_blank">supabase.com</a>, then run this in the SQL editor:</p>
+    <code>create table posts (
+  id bigserial primary key,
+  display_name text not null,
+  content text not null,
+  created_at timestamptz default now()
+);
+
+alter table posts enable row level security;
+create policy "read all" on posts for select using (true);
+create policy "insert all" on posts for insert with check (true);</code>
+    <p>Then paste your project URL and anon key (Settings → API):</p>
+    <div class="config-inputs">
+      <input id="cfg-url" type="text" placeholder="https://xxxxxxxxxxxx.supabase.co" autocomplete="off" spellcheck="false" />
+      <input id="cfg-key" type="text" placeholder="anon public key..." autocomplete="off" spellcheck="false" />
+    </div>
+    <button class="config-save-btn" id="cfg-save-btn">Save &amp; connect</button>
+  </div>
+
+  <div id="compose" style="display:none;">
+    <div id="compose-top">
+      <span id="compose-name">set name…</span>
+      <textarea id="compose-ta" placeholder="What's your goal?" maxlength="280" rows="1"></textarea>
+    </div>
+    <div id="compose-footer">
+      <span id="compose-counter">0 / 280</span>
+      <button id="post-btn" disabled>Post</button>
+    </div>
+  </div>
+
+  <div id="posts-feed"></div>
+  <div id="load-sentinel"></div>
+
+</div>
+
+<div id="name-modal-overlay" style="display:none;">
+  <div id="name-modal">
+    <h2>Choose your display name</h2>
+    <p>This is permanent and can only be set once. It will appear on every post you make.</p>
+    <input id="name-input" type="text" maxlength="32" placeholder="your name..." autocomplete="off" spellcheck="false" />
+    <div id="name-modal-footer">
+      <span id="name-char-count">0 / 32</span>
+      <button id="set-name-btn">Set name</button>
+    </div>
+  </div>
+</div>
 
 <footer class="footer">
   <a class="footer-link" href="https://discord.gg/Pn6B28fPg6" target="_blank" rel="noopener noreferrer">
@@ -142,5 +378,226 @@
   </a>
 </footer>
 
+<script>
+  const SB_URL_KEY  = 'mtg_sb_url';
+  const SB_KEY_KEY  = 'mtg_sb_key';
+  const NAME_KEY    = 'mtg_display_name';
+  const PAGE_SIZE   = 20;
+
+  let sbUrl  = localStorage.getItem(SB_URL_KEY) || '';
+  let sbKey  = localStorage.getItem(SB_KEY_KEY) || '';
+  let myName = localStorage.getItem(NAME_KEY) || '';
+
+  let page      = 0;
+  let loading   = false;
+  let exhausted = false;
+  let prepended = 0;
+
+  const configBanner   = document.getElementById('config-banner');
+  const cfgUrl         = document.getElementById('cfg-url');
+  const cfgKey         = document.getElementById('cfg-key');
+  const cfgSaveBtn     = document.getElementById('cfg-save-btn');
+  const compose        = document.getElementById('compose');
+  const composeName    = document.getElementById('compose-name');
+  const composeTa      = document.getElementById('compose-ta');
+  const composeCounter = document.getElementById('compose-counter');
+  const postBtn        = document.getElementById('post-btn');
+  const feed           = document.getElementById('posts-feed');
+  const sentinel       = document.getElementById('load-sentinel');
+  const nameOverlay    = document.getElementById('name-modal-overlay');
+  const nameInput      = document.getElementById('name-input');
+  const nameCharCount  = document.getElementById('name-char-count');
+  const setNameBtn     = document.getElementById('set-name-btn');
+
+  function sbHeaders() {
+    return {
+      'apikey': sbKey,
+      'Authorization': 'Bearer ' + sbKey,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    };
+  }
+
+  async function fetchPosts(offset) {
+    const url = `${sbUrl}/rest/v1/posts?select=display_name,content,created_at`
+      + `&order=created_at.desc&offset=${offset}&limit=${PAGE_SIZE}`;
+    const res = await fetch(url, { headers: sbHeaders() });
+    if (!res.ok) throw new Error('fetch failed');
+    return res.json();
+  }
+
+  async function insertPost(display_name, content) {
+    const res = await fetch(`${sbUrl}/rest/v1/posts`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({ display_name, content })
+    });
+    if (!res.ok) throw new Error('insert failed');
+  }
+
+  cfgSaveBtn.addEventListener('click', () => {
+    const u = cfgUrl.value.trim().replace(/\/$/, '');
+    const k = cfgKey.value.trim();
+    if (!u || !k) return;
+    sbUrl = u; sbKey = k;
+    localStorage.setItem(SB_URL_KEY, u);
+    localStorage.setItem(SB_KEY_KEY, k);
+    init();
+  });
+
+  function init() {
+    if (!sbUrl || !sbKey) {
+      configBanner.style.display = '';
+      compose.style.display = 'none';
+      return;
+    }
+    configBanner.style.display = 'none';
+    compose.style.display = '';
+    updateComposeName();
+    loadMore();
+  }
+
+  function updateComposeName() {
+    if (myName) {
+      composeName.textContent = myName;
+      composeName.classList.add('locked');
+    } else {
+      composeName.textContent = 'set name…';
+      composeName.classList.remove('locked');
+    }
+  }
+
+  composeName.addEventListener('click', () => {
+    if (myName) return;
+    openNameModal();
+  });
+
+  nameInput.addEventListener('input', () => {
+    nameCharCount.textContent = `${nameInput.value.length} / 32`;
+  });
+  nameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') trySetName();
+    if (e.key === 'Escape') nameOverlay.style.display = 'none';
+  });
+  setNameBtn.addEventListener('click', trySetName);
+
+  function openNameModal() {
+    nameOverlay.style.display = 'flex';
+    nameInput.focus();
+  }
+
+  function trySetName() {
+    const v = nameInput.value.trim();
+    if (!v) return;
+    myName = v;
+    localStorage.setItem(NAME_KEY, myName);
+    nameOverlay.style.display = 'none';
+    updateComposeName();
+  }
+
+  composeTa.addEventListener('input', () => {
+    composeTa.style.height = 'auto';
+    composeTa.style.height = composeTa.scrollHeight + 'px';
+    const len = composeTa.value.length;
+    composeCounter.textContent = `${len} / 280`;
+    postBtn.disabled = len === 0 || len > 280;
+  });
+
+  postBtn.addEventListener('click', async () => {
+    const text = composeTa.value.trim();
+    if (!text) return;
+    if (!myName) { openNameModal(); return; }
+
+    postBtn.disabled = true;
+    try {
+      await insertPost(myName, text);
+      composeTa.value = '';
+      composeTa.style.height = '';
+      composeCounter.textContent = '0 / 280';
+      postBtn.disabled = true;
+      prependPost({ display_name: myName, content: text, created_at: new Date().toISOString() });
+    } catch(e) {
+      alert('Failed to post. Check your Supabase config.');
+      postBtn.disabled = false;
+    }
+  });
+
+  function escHtml(s) {
+    return s
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;');
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      + ' · ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function createCard(post) {
+    const card = document.createElement('div');
+    card.className = 'post-card';
+    card.innerHTML =
+      `<div class="post-name">${escHtml(post.display_name)}</div>` +
+      `<div class="post-content">${escHtml(post.content)}</div>` +
+      `<div class="post-time">${formatTime(post.created_at)}</div>`;
+    return card;
+  }
+
+  function prependPost(post) {
+    const first = feed.querySelector('.post-card');
+    if (first) first.style.borderRadius = '';
+
+    const card = createCard(post);
+    feed.insertBefore(card, feed.firstChild);
+    prepended++;
+  }
+
+  async function loadMore() {
+    if (loading || exhausted) return;
+    loading = true;
+
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    feed.appendChild(spinner);
+
+    try {
+      const offset = page * PAGE_SIZE + prepended;
+      const posts  = await fetchPosts(offset);
+      spinner.remove();
+
+      posts.forEach(p => feed.appendChild(createCard(p)));
+      page++;
+
+      if (posts.length < PAGE_SIZE) {
+        exhausted = true;
+        const end = document.createElement('p');
+        end.className = 'status-line';
+        end.textContent = 'No more posts. This is the end.';
+        feed.appendChild(end);
+      }
+    } catch(e) {
+      spinner.remove();
+      const err = document.createElement('p');
+      err.className = 'status-line';
+      err.textContent = 'Could not load posts. Check your config.';
+      feed.appendChild(err);
+      exhausted = true;
+    }
+
+    loading = false;
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) loadMore();
+  }, { rootMargin: '300px' });
+
+  observer.observe(sentinel);
+
+  if (sbUrl) cfgUrl.value = sbUrl;
+  if (sbKey) cfgKey.value = sbKey;
+  init();
+</script>
 </body>
 </html>
