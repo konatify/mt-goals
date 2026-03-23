@@ -1,6 +1,6 @@
 const _orig = localStorage.getItem.bind(localStorage);
 
-if (_orig('monkeytype_goals_theme') !== null) {
+if (_orig('monkeytype_goals_theme') === 'discord') {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = 'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500&display=swap';
