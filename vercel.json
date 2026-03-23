@@ -1,0 +1,4 @@
+{
+  "buildCommand": "sed -i \"s|sburl|$SB_URL|g\" posts/index.html && sed -i \"s|sbkey|$SB_KEY|g\" posts/index.html",
+  "outputDirectory": "."
+}
