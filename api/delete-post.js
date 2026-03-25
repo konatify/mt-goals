@@ -8,6 +8,9 @@ export default async function handler(req) {
 
   const { postId } = await req.json();
 
+  // auth check only, no postId supplied
+  if (!postId) return new Response('1', { status: 200 });
+
   const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/posts?id=eq.${postId}`, {
     method: 'DELETE',
     headers: {
