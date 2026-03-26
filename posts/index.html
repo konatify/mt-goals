@@ -81,11 +81,15 @@
     #name-modal h2 { color: #fff; font-size: 0.95rem; font-weight: 500; }
     #name-modal p { color: rgba(255,255,255,0.45); font-size: 0.78rem; line-height: 1.6; }
     #name-modal p.warn { color: #e2b714; }
-    #name-input { background: #1e1f22; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.88rem; padding: 10px 13px; outline: none; }
-    #set-name-btn { background: #e2b714; border: none; border-radius: 6px; color: #1a1a1a; cursor: pointer; font-family: 'Roboto Mono', monospace; font-size: 0.82rem; font-weight: 600; padding: 8px 18px; }
+    #name-modal p.error { color: #ff6b6b; }
+    #name-input { background: #1e1f22; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.88rem; padding: 10px 13px; outline: none; transition: border-color 0.2s; }
+    #name-input.input-error { border-color: rgba(255,107,107,0.5); }
+    #name-input.input-ok { border-color: rgba(98,196,98,0.4); }
+    #set-name-btn { background: #e2b714; border: none; border-radius: 6px; color: #1a1a1a; cursor: pointer; font-family: 'Roboto Mono', monospace; font-size: 0.82rem; font-weight: 600; padding: 8px 18px; min-width: 90px; }
     #set-name-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     #cancel-name-btn { background: none; border: none; color: rgba(255,255,255,0.3); font-family: 'Roboto Mono', monospace; font-size: 0.78rem; cursor: pointer; padding: 0; }
     #cancel-name-btn:hover { color: rgba(255,255,255,0.6); }
+    .name-checking { color: rgba(255,255,255,0.3); font-size: 0.72rem; font-style: italic; }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
   </style>
@@ -118,8 +122,9 @@
     <h2>Display name</h2>
     <p id="name-modal-desc">Choose your display name. You can change it once every 7 days.</p>
     <input id="name-input" type="text" maxlength="32" placeholder="your name..." autocomplete="off" />
+    <p id="name-status" style="min-height:1.2em;font-size:0.72rem;"></p>
     <div style="display:flex;gap:10px;align-items:center;">
-      <button id="set-name-btn">Set name</button>
+      <button id="set-name-btn" disabled>Set name</button>
       <button id="cancel-name-btn">cancel</button>
     </div>
   </div>
@@ -129,78 +134,92 @@
   const sbUrl = "sburl";
   const sbKey = "sbkey";
 
-  const NAME_KEY = 'mtg_display_name';
-  const NAME_SET_AT_KEY = 'mtg_name_set_at';
-  const PAGE_SIZE = 20;
-  const REPLY_PREVIEW = 5;
+  const NAME_KEY          = 'mtg_display_name';
+  const NAME_SET_AT_KEY   = 'mtg_name_set_at';
+  const FINGERPRINT_KEY   = 'mtg_fingerprint';
+  const PAGE_SIZE         = 20;
+  const REPLY_PREVIEW     = 5;
   const CHANGE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+  const INACTIVE_MS       = 60 * 24 * 60 * 60 * 1000; // 2 months
 
   let myName = localStorage.getItem(NAME_KEY) || '';
+  let myFingerprint = getOrCreateFingerprint();
   let page = 0;
   let loading = false;
   let exhausted = false;
   let prepended = 0;
+  let nameCheckTimer = null;
+  let nameAvailable = false;
 
-  const composeName = document.getElementById('compose-name');
-  const composeTa = document.getElementById('compose-ta');
-  const composeCounter = document.getElementById('compose-counter');
-  const postBtn = document.getElementById('post-btn');
-  const feed = document.getElementById('posts-feed');
-  const sentinel = document.getElementById('load-sentinel');
-  const nameOverlay = document.getElementById('name-modal-overlay');
-  const nameInput = document.getElementById('name-input');
-  const setNameBtn = document.getElementById('set-name-btn');
-  const cancelNameBtn = document.getElementById('cancel-name-btn');
-  const nameModalDesc = document.getElementById('name-modal-desc');
-
-// ── Admin ────────────────────────────────────────────────────────────────
-let adminAuthed = false;
-let adminKey = '';
-
-window.auth = async function(key) {
-  const res = await fetch('/api/delete-post', {
-    method: 'DELETE',
-    headers: { 'x-delete-key': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({})
-  });
-  const text = await res.text();
-  if (text === '1') {
-    adminAuthed = true;
-    adminKey = key;
-    showDeleteButtons();
-    console.log('1 — authenticated, delete buttons visible');
-  } else {
-    console.log('-1 — wrong key');
+  // ── Fingerprint ──────────────────────────────────────────────────────────
+  // A random UUID stored in localStorage, used to identify "this browser" as
+  // the owner of a claimed name. Not bulletproof, but good enough for a
+  // casual community tool.
+  function getOrCreateFingerprint() {
+    let fp = localStorage.getItem(FINGERPRINT_KEY);
+    if (!fp) {
+      fp = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(FINGERPRINT_KEY, fp);
+    }
+    return fp;
   }
-}
 
-function showDeleteButtons() {
-  document.querySelectorAll('.post-card, .reply-card').forEach(card => {
-    if (card.querySelector('.admin-delete-btn')) return; // already has one
-    const postId = card.dataset.id;
-    const btn = document.createElement('button');
-    btn.className = 'admin-delete-btn reply-btn';
-    btn.textContent = 'delete';
-    btn.style.color = 'rgba(255,80,80,0.6)';
-    btn.onclick = async () => {
-      if (!confirm('Delete this post?')) return;
-      const res = await fetch('/api/delete-post', {
-        method: 'DELETE',
-        headers: { 'x-delete-key': adminKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: parseInt(postId) })
-      });
-      const text = await res.text();
-      if (text === '1') {
-        card.remove();
-      } else {
-        alert('Failed to delete');
-      }
-    };
-    // append to actions or meta row
-    const actions = card.querySelector('.post-actions') || card.querySelector('.reply-meta');
-    if (actions) actions.appendChild(btn);
-  });
-}
+  const composeName     = document.getElementById('compose-name');
+  const composeTa       = document.getElementById('compose-ta');
+  const composeCounter  = document.getElementById('compose-counter');
+  const postBtn         = document.getElementById('post-btn');
+  const feed            = document.getElementById('posts-feed');
+  const sentinel        = document.getElementById('load-sentinel');
+  const nameOverlay     = document.getElementById('name-modal-overlay');
+  const nameInput       = document.getElementById('name-input');
+  const setNameBtn      = document.getElementById('set-name-btn');
+  const cancelNameBtn   = document.getElementById('cancel-name-btn');
+  const nameModalDesc   = document.getElementById('name-modal-desc');
+  const nameStatus      = document.getElementById('name-status');
+
+  // ── Admin ────────────────────────────────────────────────────────────────
+  let adminAuthed = false;
+  let adminKey = '';
+
+  window.auth = async function(key) {
+    const res = await fetch('/api/delete-post', {
+      method: 'DELETE',
+      headers: { 'x-delete-key': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const text = await res.text();
+    if (text === '1') {
+      adminAuthed = true;
+      adminKey = key;
+      showDeleteButtons();
+      console.log('1 — authenticated, delete buttons visible');
+    } else {
+      console.log('-1 — wrong key');
+    }
+  };
+
+  function showDeleteButtons() {
+    document.querySelectorAll('.post-card, .reply-card').forEach(card => {
+      if (card.querySelector('.admin-delete-btn')) return;
+      const postId = card.dataset.id;
+      const btn = document.createElement('button');
+      btn.className = 'admin-delete-btn reply-btn';
+      btn.textContent = 'delete';
+      btn.style.color = 'rgba(255,80,80,0.6)';
+      btn.onclick = async () => {
+        if (!confirm('Delete this post?')) return;
+        const res = await fetch('/api/delete-post', {
+          method: 'DELETE',
+          headers: { 'x-delete-key': adminKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId: parseInt(postId) })
+        });
+        const text = await res.text();
+        if (text === '1') { card.remove(); } else { alert('Failed to delete'); }
+      };
+      const actions = card.querySelector('.post-actions') || card.querySelector('.reply-meta');
+      if (actions) actions.appendChild(btn);
+    });
+  }
 
   function sbHeaders() {
     return {
@@ -211,6 +230,72 @@ function showDeleteButtons() {
     };
   }
 
+  // ── Name uniqueness via Supabase `usernames` table ───────────────────────
+  //
+  // Expected table schema (run this in Supabase SQL editor):
+  //
+  //   create table if not exists usernames (
+  //     name        text primary key,         -- case-insensitive via CHECK/lower()
+  //     fingerprint text not null,            -- browser UUID claiming this name
+  //     last_active timestamptz default now() -- updated on every post
+  //   );
+  //
+  //   -- Inactivity cleanup: run daily via pg_cron or a Supabase Edge Function cron:
+  //   update usernames
+  //     set name = 'INACTIVE_' || floor(random()*90000+10000)::text,
+  //         fingerprint = 'RELEASED'
+  //     where last_active < now() - interval '60 days'
+  //       and name not like 'INACTIVE_%';
+  //
+  //   -- One-time dedup of existing duplicate display_names in posts:
+  //   -- (run manually if you had duplicate names before this update)
+  //   update posts p
+  //     set display_name = 'MODERATED_' || floor(random()*9000+1000)::text
+  //     where display_name in (
+  //       select display_name from posts
+  //       group by lower(display_name)
+  //       having count(distinct fingerprint_or_whatever) > 1
+  //     );
+
+  async function isNameTaken(name) {
+    const norm = name.trim().toLowerCase();
+    const url = `${sbUrl}/rest/v1/usernames?name=eq.${encodeURIComponent(norm)}&select=fingerprint`;
+    const res = await fetch(url, { headers: sbHeaders() });
+    const rows = await res.json();
+    if (!rows || rows.length === 0) return false;
+    // It's "taken" only if owned by someone else
+    return rows[0].fingerprint !== myFingerprint;
+  }
+
+  async function claimName(name) {
+    const norm = name.trim().toLowerCase();
+    // Upsert: if this fingerprint already owns a name, release it first
+    // Then claim the new one. We do this via two calls:
+    // 1. Release any previous name owned by this fingerprint
+    await fetch(`${sbUrl}/rest/v1/usernames?fingerprint=eq.${encodeURIComponent(myFingerprint)}`, {
+      method: 'DELETE',
+      headers: sbHeaders()
+    });
+    // 2. Insert new claim
+    const res = await fetch(`${sbUrl}/rest/v1/usernames`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ name: norm, fingerprint: myFingerprint, last_active: new Date().toISOString() })
+    });
+    return res.ok || res.status === 201;
+  }
+
+  async function touchLastActive() {
+    if (!myName) return;
+    const norm = myName.toLowerCase();
+    await fetch(`${sbUrl}/rest/v1/usernames?name=eq.${encodeURIComponent(norm)}&fingerprint=eq.${encodeURIComponent(myFingerprint)}`, {
+      method: 'PATCH',
+      headers: sbHeaders(),
+      body: JSON.stringify({ last_active: new Date().toISOString() })
+    });
+  }
+
+  // ── Name modal ───────────────────────────────────────────────────────────
   function canChangeName() {
     const setAt = localStorage.getItem(NAME_SET_AT_KEY);
     if (!setAt) return true;
@@ -225,39 +310,123 @@ function showDeleteButtons() {
   }
 
   function openNameModal() {
+    nameInput.className = '';
+    nameStatus.textContent = '';
+    nameStatus.className = '';
+    setNameBtn.disabled = true;
+    nameAvailable = false;
+
     if (myName && !canChangeName()) {
       nameModalDesc.textContent = `You can change your name in ${daysUntilChange()} day(s).`;
       nameModalDesc.className = 'warn';
       nameInput.style.display = 'none';
+      nameStatus.style.display = 'none';
       setNameBtn.style.display = 'none';
     } else {
       nameModalDesc.textContent = 'Choose your display name. You can change it once every 7 days.';
       nameModalDesc.className = '';
       nameInput.style.display = '';
+      nameStatus.style.display = '';
       setNameBtn.style.display = '';
       nameInput.value = myName || '';
+      if (myName) {
+        // Pre-fill as available (it's their own name)
+        nameAvailable = true;
+        setNameBtn.disabled = false;
+        nameStatus.textContent = 'your current name';
+        nameStatus.style.color = 'rgba(255,255,255,0.3)';
+      }
     }
     nameOverlay.style.display = 'flex';
+    setTimeout(() => nameInput.focus(), 50);
   }
 
   composeName.onclick = openNameModal;
   cancelNameBtn.onclick = () => { nameOverlay.style.display = 'none'; };
   nameOverlay.onclick = (e) => { if (e.target === nameOverlay) nameOverlay.style.display = 'none'; };
 
-  setNameBtn.onclick = () => {
+  nameInput.oninput = () => {
     const v = nameInput.value.trim();
-    if (!v) return;
-    myName = v;
-    localStorage.setItem(NAME_KEY, v);
-    localStorage.setItem(NAME_SET_AT_KEY, Date.now().toString());
-    nameOverlay.style.display = 'none';
-    updateComposeName();
+    nameAvailable = false;
+    setNameBtn.disabled = true;
+    nameInput.className = '';
+    nameStatus.style.color = 'rgba(255,255,255,0.3)';
+
+    if (!v) {
+      nameStatus.textContent = '';
+      return;
+    }
+
+    // If same as current name, always fine
+    if (myName && v.toLowerCase() === myName.toLowerCase()) {
+      nameStatus.textContent = 'your current name';
+      nameAvailable = true;
+      setNameBtn.disabled = false;
+      return;
+    }
+
+    nameStatus.textContent = 'checking…';
+    nameStatus.style.color = 'rgba(255,255,255,0.3)';
+
+    clearTimeout(nameCheckTimer);
+    nameCheckTimer = setTimeout(async () => {
+      const taken = await isNameTaken(v);
+      if (nameInput.value.trim().toLowerCase() !== v.toLowerCase()) return; // stale
+      if (taken) {
+        nameInput.className = 'input-error';
+        nameStatus.textContent = 'Sorry, this is taken!';
+        nameStatus.style.color = '#ff6b6b';
+        nameAvailable = false;
+        setNameBtn.disabled = true;
+      } else {
+        nameInput.className = 'input-ok';
+        nameStatus.textContent = '✓ available';
+        nameStatus.style.color = '#62c462';
+        nameAvailable = true;
+        setNameBtn.disabled = false;
+      }
+    }, 400);
+  };
+
+  setNameBtn.onclick = async () => {
+    const v = nameInput.value.trim();
+    if (!v || !nameAvailable) return;
+    setNameBtn.disabled = true;
+    setNameBtn.textContent = 'Saving…';
+
+    try {
+      // Re-check right before claiming (race condition protection)
+      const taken = await isNameTaken(v);
+      if (taken) {
+        nameInput.className = 'input-error';
+        nameStatus.textContent = 'Sorry, this is taken!';
+        nameStatus.style.color = '#ff6b6b';
+        setNameBtn.textContent = 'Set name';
+        setNameBtn.disabled = true;
+        nameAvailable = false;
+        return;
+      }
+
+      const ok = await claimName(v);
+      if (!ok) throw new Error('claim failed');
+
+      myName = v;
+      localStorage.setItem(NAME_KEY, v);
+      localStorage.setItem(NAME_SET_AT_KEY, Date.now().toString());
+      nameOverlay.style.display = 'none';
+      updateComposeName();
+    } catch(e) {
+      alert('Something went wrong. Please try again.');
+    }
+    setNameBtn.textContent = 'Set name';
+    setNameBtn.disabled = false;
   };
 
   function updateComposeName() {
     composeName.textContent = myName || 'set name…';
   }
 
+  // ── Compose ──────────────────────────────────────────────────────────────
   composeTa.oninput = () => {
     composeTa.style.height = 'auto';
     composeTa.style.height = composeTa.scrollHeight + 'px';
@@ -276,33 +445,16 @@ function showDeleteButtons() {
       composeTa.style.height = 'auto';
       composeCounter.textContent = '0 / 280';
       if (newPost) prependPost(newPost);
+      await touchLastActive(); // update activity timestamp
     } catch(e) { alert('Check connection.'); postBtn.disabled = false; }
   };
 
   // ── API ──────────────────────────────────────────────────────────────────
 
-  async function fetchPosts(offset) {
-    const url = `${sbUrl}/rest/v1/posts?select=id,display_name,content,created_at,parent_id&order=created_at.desc&offset=${offset}&limit=${PAGE_SIZE}`;
-    const res = await fetch(url, { headers: sbHeaders() });
-    return res.json();
-  }
-
   async function fetchReplies(postId, limit, offset) {
-    // fetch replies whose parent_id = postId, ordered oldest first so thread reads naturally
     const url = `${sbUrl}/rest/v1/posts?select=id,display_name,content,created_at,parent_id&parent_id=eq.${postId}&order=created_at.asc&limit=${limit}&offset=${offset}`;
     const res = await fetch(url, { headers: sbHeaders() });
     return res.json();
-  }
-
-  async function countReplies(postId) {
-    const url = `${sbUrl}/rest/v1/posts?parent_id=eq.${postId}&select=id`;
-    const res = await fetch(url, { headers: { ...sbHeaders(), 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' } });
-    const count = res.headers.get('Content-Range');
-    if (count) {
-      const total = count.split('/')[1];
-      return total === '*' ? 0 : parseInt(total, 10);
-    }
-    return 0;
   }
 
   async function insertPost(displayName, content, parentId) {
@@ -386,6 +538,7 @@ function showDeleteButtons() {
       submitBtn.disabled = true;
       try {
         await onSubmit(text);
+        await touchLastActive();
       } catch(e) {
         alert('Check connection.');
         submitBtn.disabled = false;
@@ -395,7 +548,6 @@ function showDeleteButtons() {
     return wrap;
   }
 
-  // Build a single reply card (can be nested)
   function createReplyCard(reply, depth) {
     const card = document.createElement('div');
     card.className = 'reply-card';
@@ -427,7 +579,6 @@ function showDeleteButtons() {
     card.appendChild(contentEl);
     card.appendChild(meta);
 
-    // Container for nested replies + compose
     const nestedSection = document.createElement('div');
     nestedSection.className = 'replies-section';
     card.appendChild(nestedSection);
@@ -442,7 +593,6 @@ function showDeleteButtons() {
         return;
       }
       composeVisible = true;
-      // load nested replies first if not loaded
       loadNestedReplies(reply.id, nestedSection, depth + 1);
 
       const compose = createReplyComposeEl(
@@ -452,7 +602,6 @@ function showDeleteButtons() {
           compose.remove();
           composeVisible = false;
           if (newReply) {
-            // prepend into nestedSection thread
             let thread = nestedSection.querySelector('.reply-thread');
             if (!thread) {
               thread = document.createElement('div');
@@ -467,6 +616,25 @@ function showDeleteButtons() {
       nestedSection.appendChild(compose);
     };
 
+    if (adminAuthed) {
+      setTimeout(() => {
+        const btn = document.createElement('button');
+        btn.className = 'admin-delete-btn reply-reply-btn';
+        btn.textContent = 'delete';
+        btn.style.color = 'rgba(255,80,80,0.6)';
+        btn.onclick = async () => {
+          if (!confirm('Delete this post?')) return;
+          const res = await fetch('/api/delete-post', {
+            method: 'DELETE',
+            headers: { 'x-delete-key': adminKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId: parseInt(card.dataset.id) })
+          });
+          if ((await res.text()) === '1') card.remove(); else alert('Failed to delete');
+        };
+        meta.appendChild(btn);
+      }, 0);
+    }
+
     return card;
   }
 
@@ -474,11 +642,10 @@ function showDeleteButtons() {
 
   async function loadNestedReplies(parentId, container, depth) {
     if (nestedLoadingSet.has(parentId)) return;
-    if (container.querySelector('.reply-thread')) return; // already loaded
+    if (container.querySelector('.reply-thread')) return;
     nestedLoadingSet.add(parentId);
-
     try {
-      const replies = await fetchReplies(parentId, 999, 0); // load all nested
+      const replies = await fetchReplies(parentId, 999, 0);
       if (!replies || replies.length === 0) return;
       const thread = document.createElement('div');
       thread.className = 'reply-thread';
@@ -488,17 +655,13 @@ function showDeleteButtons() {
     nestedLoadingSet.delete(parentId);
   }
 
-  // Build replies section for a top-level post
   async function buildRepliesSection(postId, container) {
     container.innerHTML = '';
-
-    let allReplies = null; // null = not fully loaded
-    let shown = 0;
+    let allReplies = null;
 
     async function renderReplies(replies, showAll) {
       container.innerHTML = '';
       const toShow = showAll ? replies : replies.slice(0, REPLY_PREVIEW);
-      shown = toShow.length;
 
       if (toShow.length === 0) return;
 
@@ -513,7 +676,6 @@ function showDeleteButtons() {
         loadMoreBtn.className = 'load-more-replies';
         loadMoreBtn.textContent = `load more? (${more} more)`;
         loadMoreBtn.onclick = async () => {
-          // load every reply
           const all = await fetchReplies(postId, 999, 0);
           await renderReplies(all, true);
           allReplies = all;
@@ -522,7 +684,6 @@ function showDeleteButtons() {
       }
     }
 
-    // Load first batch
     const initial = await fetchReplies(postId, REPLY_PREVIEW + 1, 0);
     if (!initial || initial.length === 0) return;
 
@@ -530,13 +691,10 @@ function showDeleteButtons() {
       await renderReplies(initial, true);
       allReplies = initial;
     } else {
-      // there are more than preview count
-      const preview = initial.slice(0, REPLY_PREVIEW);
-      await renderReplies(preview, false);
+      await renderReplies(initial.slice(0, REPLY_PREVIEW), false);
     }
   }
 
-  // Create top-level post card
   function createCard(post) {
     const card = document.createElement('div');
     card.className = 'post-card';
@@ -563,13 +721,29 @@ function showDeleteButtons() {
 
     actions.appendChild(replyBtn);
 
+    if (adminAuthed) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'admin-delete-btn reply-btn';
+      delBtn.textContent = 'delete';
+      delBtn.style.color = 'rgba(255,80,80,0.6)';
+      delBtn.onclick = async () => {
+        if (!confirm('Delete this post?')) return;
+        const res = await fetch('/api/delete-post', {
+          method: 'DELETE',
+          headers: { 'x-delete-key': adminKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId: parseInt(post.id) })
+        });
+        if ((await res.text()) === '1') card.remove(); else alert('Failed to delete');
+      };
+      actions.appendChild(delBtn);
+    }
+
     const repliesSection = document.createElement('div');
     repliesSection.className = 'replies-section';
 
     let repliesLoaded = false;
     let composeVisible = false;
 
-    // Load replies lazily when reply is clicked or on init for posts with replies
     async function ensureRepliesLoaded() {
       if (!repliesLoaded) {
         repliesLoaded = true;
@@ -595,7 +769,6 @@ function showDeleteButtons() {
           compose.remove();
           composeVisible = false;
           if (newReply) {
-            // ensure thread exists in repliesSection
             let thread = repliesSection.querySelector('.reply-thread');
             if (!thread) {
               thread = document.createElement('div');
@@ -608,7 +781,6 @@ function showDeleteButtons() {
         () => { compose.remove(); composeVisible = false; }
       );
 
-      // insert compose after actions
       card.insertBefore(compose, repliesSection);
     };
 
@@ -618,15 +790,11 @@ function showDeleteButtons() {
     card.appendChild(actions);
     card.appendChild(repliesSection);
 
-    // Auto-load replies if post has them (check lazily via intersection)
     const replyObserver = new IntersectionObserver(async (entries) => {
       if (entries[0].isIntersecting) {
         replyObserver.disconnect();
-        // Peek if there are any replies
         const peek = await fetchReplies(post.id, 1, 0);
-        if (peek && peek.length > 0) {
-          await ensureRepliesLoaded();
-        }
+        if (peek && peek.length > 0) await ensureRepliesLoaded();
       }
     }, { rootMargin: '200px' });
     replyObserver.observe(card);
@@ -643,7 +811,6 @@ function showDeleteButtons() {
     if (loading || exhausted) return;
     loading = true;
     try {
-      // Only fetch top-level posts (parent_id is null)
       const url = `${sbUrl}/rest/v1/posts?select=id,display_name,content,created_at,parent_id&parent_id=is.null&order=created_at.desc&offset=${page * PAGE_SIZE + prepended}&limit=${PAGE_SIZE}`;
       const res = await fetch(url, { headers: sbHeaders() });
       const posts = await res.json();
@@ -661,6 +828,9 @@ function showDeleteButtons() {
 
   updateComposeName();
   loadMore();
+
+  // Touch last_active on load (keeps active users from getting flagged inactive)
+  if (myName) touchLastActive();
 </script>
 </body>
 </html>
