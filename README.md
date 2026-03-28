@@ -1,4 +1,4 @@
-![MonkeyType Goals](https://mtgoals.zandovo.com/images/readme_picture.png)
+[![MonkeyType Goals](https://mtgoals.zandovo.com/images/readme_picture.png)](https://mtgoals.cc/)
 <br />
 
 [![HTML5](https://img.shields.io/badge/html5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://wikipedia.org/wiki/html)
